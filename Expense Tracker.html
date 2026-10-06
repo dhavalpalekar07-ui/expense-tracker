@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Expense Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f2;--card:#fff;--ink:#16302b;--mute:#62786f;--line:#d8e0da;--accent:#0f6b5c;--danger:#b3372b;
+--c0:#0f6b5c;--c1:#e0a030;--c2:#3b6fb6;--c3:#c8553d;--c4:#7a5ca8;--c5:#8a9a5b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10201c;--card:#172a25;--ink:#e6efe9;--mute:#93aba1;--line:#2b423b;--accent:#4fc2a9;--danger:#ef7d6f;--c0:#4fc2a9;--c1:#f0bd5a;--c2:#7fa8e6;--c3:#ec8a72;--c4:#b69ae0;--c5:#b5c47f}}
+:root[data-theme="dark"]{--bg:#10201c;--card:#172a25;--ink:#e6efe9;--mute:#93aba1;--line:#2b423b;--accent:#4fc2a9;--danger:#ef7d6f;--c0:#4fc2a9;--c1:#f0bd5a;--c2:#7fa8e6;--c3:#ec8a72;--c4:#b69ae0;--c5:#b5c47f}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.45}
+main{max-width:860px;margin:0 auto;padding:28px 18px 48px}
+header{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:end;margin-bottom:22px}
+h1{margin:0;font-size:clamp(1.8rem,5vw,2.6rem);font-weight:800;letter-spacing:-.02em}
+.total{font-size:clamp(2rem,7vw,3.2rem);font-weight:800;letter-spacing:-.03em;line-height:1}
+.total small{display:block;font-size:.85rem;font-weight:400;color:var(--mute);letter-spacing:0;margin-bottom:4px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+label{font-size:.85rem;color:var(--mute);display:block;margin-bottom:4px}
+input,select,button{font:inherit;color:inherit}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+button{padding:10px 18px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--bg);font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--accent)}
+button.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+button:active{transform:translateY(1px)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:16px}
+.bar .m{flex:1;min-width:160px}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.chip{display:flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:.9rem}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+ul{list-style:none;margin:0;padding:0}
+li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+li:last-child{border:0}
+li .d{flex:1;min-width:0;overflow-wrap:anywhere}
+li .c{color:var(--mute);font-size:.85rem}
+li .a{font-weight:600;white-space:nowrap}
+li button{padding:4px 10px;font-size:.85rem}
+.empty{color:var(--mute);padding:8px 0}
+#chartWrap{overflow-x:auto}
+svg text{fill:var(--mute);font-family:inherit;font-size:12px}
+.hide{display:none}
+.budget{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:16px;align-items:center}
+@media (max-width:560px){.budget{grid-template-columns:1fr}}
+.track{height:12px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:8px}
+.fill{height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
+.fill.over{background:var(--danger)}
+.status{font-weight:600}
+.status.over{color:var(--danger)}
+.status.ok{color:var(--accent)}
+.status.none{color:var(--mute);font-weight:400}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Expense tracker</h1>
+  <div class="total"><small id="mLabel">Spent this month</small><span id="total">₹0</span></div>
+</header>
+
+<div class="bar">
+  <div class="m"><label for="month">Month</label><input type="month" id="month"></div>
+  <button id="plotBtn">Plot monthly expenditure</button>
+  <button id="resetBtn" class="danger">Reset this month</button>
+</div>
+
+<section class="panel budget">
+  <div><label for="budget">Monthly budget (₹)</label><input id="budget" type="number" min="0" step="1" inputmode="decimal" placeholder="e.g. 30000"></div>
+  <div><div class="track"><div class="fill" id="fill" style="width:0"></div></div><div class="status none" id="status" aria-live="polite">Set a budget to track this month.</div></div>
+</section>
+
+<section class="panel">
+  <div class="form">
+    <div><label for="desc">Description</label><input id="desc" placeholder="e.g. Groceries" maxlength="60"></div>
+    <div><label for="amt">Amount (₹)</label><input id="amt" type="number" min="0" step="0.01" inputmode="decimal"></div>
+    <div><label for="cat">Category</label><select id="cat"></select></div>
+    <div><button id="addBtn" style="width:100%">Add expense</button></div>
+  </div>
+</section>
+
+<section class="panel hide" id="plotPanel">
+  <div class="cats" id="legend"></div>
+  <div id="chartWrap"></div>
+</section>
+
+<section class="panel">
+  <div class="cats" id="breakdown"></div>
+  <ul id="list"></ul>
+</section>
+</main>
+
+<script>
+const CATS=["Food","Transport","Housing","Bills","Shopping","Other"];
+const COLORS=CATS.map((_,i)=>`var(--c${i})`);
+const KEY="expenses-v1";
+let data={}; // { "2026-10": [{id,desc,amt,cat}] }
+try{const s=localStorage.getItem(KEY);if(s)data=JSON.parse(s)||{}}catch(e){}
+const $=id=>document.getElementById(id);
+const fmt=n=>"₹"+Number(n).toLocaleString("en-IN",{maximumFractionDigits:2});
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}};
+let budgets={};
+try{const b=localStorage.getItem("budgets-v1");if(b)budgets=JSON.parse(b)||{}}catch(e){}
+const saveB=()=>{try{localStorage.setItem("budgets-v1",JSON.stringify(budgets))}catch(e){}};
+const now=new Date();
+$("month").value=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+$("cat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+const cur=()=>$("month").value;
+const monthName=k=>{const[y,m]=k.split("-");return new Date(y,m-1).toLocaleString("en-IN",{month:"short",year:"2-digit"})};
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const k=cur(), items=data[k]||[];
+  const sum=items.reduce((a,e)=>a+e.amt,0);
+  $("total").textContent=fmt(sum);
+  $("mLabel").textContent=k?"Spent in "+monthName(k):"Pick a month";
+  const bud=budgets[k]||0;
+  if(document.activeElement!==$("budget"))$("budget").value=bud||"";
+  const st=$("status"),fl=$("fill");
+  if(!bud){st.className="status none";st.textContent="Set a budget to track this month.";fl.style.width="0";fl.className="fill"}
+  else if(sum>bud){st.className="status over";st.textContent="Over budget by "+fmt(sum-bud)+" ("+fmt(sum)+" of "+fmt(bud)+")";fl.style.width="100%";fl.className="fill over"}
+  else{st.className="status ok";st.textContent="Within budget: "+fmt(bud-sum)+" left ("+fmt(sum)+" of "+fmt(bud)+")";fl.style.width=Math.min(100,sum/bud*100)+"%";fl.className="fill"}
+  $("total").style.color=bud&&sum>bud?"var(--danger)":"";
+  const by=CATS.map(c=>items.filter(e=>e.cat===c).reduce((a,e)=>a+e.amt,0));
+  $("breakdown").innerHTML=CATS.map((c,i)=>by[i]?`<div class="chip"><span class="dot" style="background:${COLORS[i]}"></span>${c} ${fmt(by[i])}</div>`:"").join("");
+  $("list").innerHTML=items.length?items.slice().reverse().map(e=>`<li><span class="dot" style="background:${COLORS[CATS.indexOf(e.cat)]}"></span><span class="d">${esc(e.desc)}<div class="c">${e.cat}</div></span><span class="a">${fmt(e.amt)}</span><button class="ghost" data-id="${e.id}" aria-label="Delete ${esc(e.desc)}">Delete</button></li>`).join(""):`<div class="empty">No expenses for this month yet. Add one above.</div>`;
+  if(!$("plotPanel").classList.contains("hide"))plot();
+}
+
+function plot(){
+  const months=Object.keys(data).filter(k=>data[k].length).sort();
+  $("legend").innerHTML=CATS.map((c,i)=>`<div class="chip"><span class="dot" style="background:${COLORS[i]}"></span>${c}</div>`).join("")+`<div class="chip">Dashed line = budget</div>`;
+  if(!months.length){$("chartWrap").innerHTML=`<div class="empty">Nothing to plot yet. Add some expenses first.</div>`;return}
+  const rows=months.map(k=>({k,v:CATS.map(c=>data[k].filter(e=>e.cat===c).reduce((a,e)=>a+e.amt,0))}));
+  const max=Math.max(...rows.map(r=>Math.max(r.v.reduce((a,b)=>a+b,0),budgets[r.k]||0)))||1;
+  const bw=56,gap=22,L=56,T=16,H=240,B=30,W=L+rows.length*(bw+gap)+10;
+  let s=`<svg viewBox="0 0 ${Math.max(W,320)} ${T+H+B}" width="${Math.max(W,320)}" role="img" aria-label="Monthly expenditure by category">`;
+  for(let i=0;i<=4;i++){const y=T+H-H*i/4;s+=`<line x1="${L}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-8}" y="${y+4}" text-anchor="end">${fmt(Math.round(max*i/4))}</text>`}
+  rows.forEach((r,j)=>{
+    const x=L+gap/2+j*(bw+gap);let y=T+H;const tot=r.v.reduce((a,b)=>a+b,0);
+    r.v.forEach((v,i)=>{if(!v)return;const h=H*v/max;y-=h;s+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" fill="${COLORS[i]}"><title>${CATS[i]}: ${fmt(v)}</title></rect>`});
+    const bd=budgets[r.k];
+    if(bd){const by=T+H-H*bd/max;s+=`<line x1="${x-6}" x2="${x+bw+6}" y1="${by}" y2="${by}" stroke="${tot>bd?"var(--danger)":"var(--ink)"}" stroke-width="2" stroke-dasharray="5 3"><title>Budget: ${fmt(bd)}</title></line>`}
+    s+=`<text x="${x+bw/2}" y="${y-5}" text-anchor="middle" style="fill:var(--ink)">${fmt(tot)}</text><text x="${x+bw/2}" y="${T+H+18}" text-anchor="middle">${monthName(r.k)}</text>`;
+  });
+  $("chartWrap").innerHTML=s+"</svg>";
+}
+
+$("addBtn").onclick=()=>{
+  const desc=$("desc").value.trim(),amt=parseFloat($("amt").value);
+  if(!cur()){$("month").focus();return}
+  if(!desc){$("desc").focus();return}
+  if(!(amt>0)){$("amt").focus();return}
+  (data[cur()]=data[cur()]||[]).push({id:Date.now()+Math.random(),desc,amt,cat:$("cat").value});
+  $("desc").value="";$("amt").value="";$("desc").focus();save();render();
+};
+["desc","amt"].forEach(i=>$(i).addEventListener("keydown",e=>{if(e.key==="Enter")$("addBtn").click()}));
+$("list").onclick=e=>{const id=e.target.dataset.id;if(!id)return;data[cur()]=data[cur()].filter(x=>String(x.id)!==id);save();render()};
+$("month").onchange=render;
+$("budget").oninput=()=>{const v=parseFloat($("budget").value);if(v>0)budgets[cur()]=v;else delete budgets[cur()];saveB();render()};
+$("budget").onblur=render;
+$("plotBtn").onclick=()=>{$("plotPanel").classList.remove("hide");plot();$("plotPanel").scrollIntoView({behavior:"smooth",block:"nearest"})};
+$("resetBtn").onclick=()=>{
+  if(!(data[cur()]||[]).length)return;
+  if(!confirm("Clear all expenses for "+monthName(cur())+"?"))return;
+  delete data[cur()];save();render();
+};
+render();
+</script>
+</body>
+</html>
